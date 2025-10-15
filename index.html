@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="AvaLIBRAS UI2 - Interface para criação de avaliações educacionais com vídeo"
+        />
+        <meta name="author" content="AvaLIBRAS" />
+        <meta name="theme-color" content="#111827" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob:;">
+        <title>AvaLIBRAS – Editor de Videoprovas</title>
+
+        <!-- FontAwesome Icons - Versão Otimizada para AvaLIBRAS UI2 -->
+        <link rel="stylesheet" href="sources/css/fontawesome/icons.css" />
+
+        <!-- Estilos principais -->
+        <link rel="stylesheet" href="sources/css/styles.css" />
+        <style>
+            .selection-handle-tooltip {
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--surface-tertiary);
+                color: var(--text-primary);
+                padding: 2px 6px;
+                border-radius: var(--radius);
+                font-size: var(--font-size-xs);
+                font-family: var(--font-mono);
+                white-space: nowrap;
+                margin-bottom: 8px;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                pointer-events: none;
+                z-index: 11;
+            }
+
+            .selection-start:hover .selection-handle-tooltip,
+            .selection-end:hover .selection-handle-tooltip,
+            .selection-handle-tooltip.visible {
+                opacity: 1;
+            }
+
+            /* Estilos para validação de formulários */
+            .input-error {
+                border-color: var(--error-primary) !important;
+                box-shadow: 0 0 0 1px var(--error-primary) !important;
+                background: var(--error-bg) !important;
+            }
+
+            .field-error {
+                font-size: 11px;
+                color: #e74c3c;
+                margin-top: 4px;
+                background: #fdf2f2;
+                padding: 2px 6px;
+                border-radius: 3px;
+                border: 1px solid #e74c3c;
+                animation: slideIn 0.2s ease-out;
+            }
+
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Melhorias para o botão customizado de imagem */
+            #overlayImageSelectBtn {
+                transition: all 0.2s ease;
+            }
+
+            #overlayImageSelectBtn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            }
+
+            #overlayImageSelectBtn:active {
+                transform: translateY(0);
+                box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            }
+
+            /* Melhorias para o campo de nome de arquivo */
+            #overlayImageFileName {
+                transition: all 0.3s ease;
+                border: 1px solid var(--border-color);
+                padding: 6px 12px;
+            }
+
+            #overlayImageFileName:hover {
+                border-color: var(--accent-primary);
+                background: var(--surface-primary);
+            }
+
+            /* Estados para botões de formulário */
+            .btn:disabled {
+                opacity: 0.5 !important;
+                cursor: not-allowed !important;
+                transform: none !important;
+            }
+
+            .btn:disabled:hover {
+                transform: none !important;
+                box-shadow: none !important;
+            }
+        </style>
+        <base target="_blank" />
+    </head>
+
+    <body>
+        <div class="app">
+            <!-- ---------- Title-bar ---------- -->
+            <header class="titlebar">
+                <nav>
+                    <ul class="top-menu">
+                        <li>
+                            <button data-menu="file">Arquivo</button>
+                            <ul class="dropdown">
+                                <li>
+                                    <button data-action="new-project">
+                                        Novo Projeto
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="open-project">
+                                        Abrir…
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li class="menu-header">
+                                    Projetos Recentes
+                                    <ul class="recent-projects" id="recentProjectsList">
+                                        <!-- Recent projects will be dynamically injected here -->
+                                    </ul>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="save-project">
+                                        Salvar
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="save-as-project">
+                                        Salvar Como…
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="export-proof">
+                                        Exportar Prova…
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="exit-app">Sair</button>
+                                </li>
+                            </ul>
+                        </li>
+                          <li>
+                            <button data-menu="question">Questão</button>
+                            <ul class="dropdown">
+                                <li>
+                                    <button data-action="add-question">
+                                        Adicionar Nova
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="import-questions">
+                                        Importar…
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="manage-questions">
+                                        Gerenciar Questões…
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="duplicate-question">
+                                        Duplicar Questão Atual
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="clear-all-questions">
+                                        Remover Todas as Questões
+                                    </button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <button data-menu="tools">Ferramentas</button>
+                            <ul class="dropdown">
+                                <li>
+                                    <button data-action="settings">
+                                        Configurações
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="clear-cache">
+                                        Limpar Cache Temporário
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="verify-integrity">
+                                        Verificar Integridade do Projeto
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="project-stats">
+                                        Estatísticas da Avaliação
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="dev-tools">
+                                        Alternar DevTools
+                                    </button>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <button data-menu="help">Ajuda</button>
+                            <ul class="dropdown">
+                                <li>
+                                    <button data-action="user-manual">
+                                        Manual do Usuário
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="keyboard-shortcuts">
+                                        Atalhos de Teclado
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="usage-examples">
+                                        Exemplos de Uso
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="check-updates">
+                                        Verificar Atualizações
+                                    </button>
+                                </li>
+                                <li>
+                                    <button data-action="report-issue">
+                                        Reportar Problema
+                                    </button>
+                                </li>
+                                <li class="menu-separator"></li>
+                                <li>
+                                    <button data-action="about">Sobre o AvaLIBRAS</button>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+
+                <span class="text-xs" style="color: var(--text-secondary)"
+                    >AvaLIBRAS – Editor de Videoprovas</span
+                >
+
+                <div class="window-controls">
+                    <button
+                        class="window-control minimize"
+                        id="minimize"
+                        tabindex="0"
+                        aria-label="Minimizar janela"
+                        data-tooltip="Minimizar"
+                    >
+                        <div class="window-control-icon"></div>
+                        <div class="window-control-tooltip">Minimizar</div>
+                    </button>
+                    <button
+                        class="window-control maximize"
+                        id="maximize"
+                        tabindex="0"
+                        aria-label="Maximizar janela"
+                        data-tooltip="Maximizar"
+                    >
+                        <div class="window-control-icon"></div>
+                        <div class="window-control-tooltip">Maximizar</div>
+                    </button>
+                    <button
+                        class="window-control close"
+                        id="close"
+                        tabindex="0"
+                        aria-label="Fechar janela"
+                        data-tooltip="Fechar"
+                    >
+                        <div class="window-control-icon"></div>
+                        <div class="window-control-tooltip">Fechar</div>
+                    </button>
+                </div>
+            </header>
+
+            <!-- ---------- Main Layout ---------- -->
+            <div class="main">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="panel panel-questions">
+                        <h2 class="panel-title">Questões (<span id="question-count">0</span>)</h2>
+                        <div
+                            class="question-grid"
+                            role="group"
+                            aria-label="Seleção de questões"
+                        >
+                            <!-- Question buttons are dynamically injected here by renderQuestionGrid() -->
+                        </div>
+                    </div>
+
+                    <!-- Panel Details Resize Handle -->
+                    <div
+                        class="panel-details-resize-handle"
+                        role="separator"
+                        aria-label="Redimensionar painel de detalhes"
+                        tabindex="0"
+                        aria-orientation="horizontal"
+                    >
+                        <div class="panel-details-resize-tooltip">
+                            Arraste: ↑Diminuir ↓Aumentar
+                        </div>
+                    </div>
+
+                    <div class="panel panel-details">
+                        <h3 class="panel-title">Detalhes da Questão</h3>
+
+                        <div class="detail-item" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="detail-label">Vídeo</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="detail-value" id="details-video-name">Nenhum vídeo carregado</span>
+                                <div id="change-video-button-container"></div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <span class="detail-label">Resposta Correta</span>
+                            <div class="flat-answers" id="details-answers-container">
+                                <!-- Alternative buttons are dynamically injected here by renderDetailsPanel() -->
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Resize Handle -->
+                <div
+                    class="resize-handle"
+                    role="separator"
+                    aria-label="Redimensionar painel"
+                    tabindex="0"
+                    aria-orientation="vertical"
+                >
+                    <div class="resize-tooltip">
+                        Arraste para redimensionar o painel
+                    </div>
+                </div>
+
+                <!-- Editor -->
+                <section class="editor">
+                    <header class="panel flex items-center justify-between">
+                        <div>
+                            <h1 id="project-title" class="text-md font-semibold">
+                                Projeto sem Título
+                            </h1>
+                            <p class="text-xs" id="project-type" style="color: var(--text-secondary)">
+                                Múltipla escolha • 4 alternativas
+                            </p>
+                        </div>
+                        <span class="text-xs" id="project-progress">0 de 0 questões</span>
+                    </header>
+
+                    <div class="video-container">
+                        <div class="drop-hint">
+                            Arraste um vídeo para cá ou clique para importar
+                        </div>
+                        <video
+                            id="videoPlayer"
+                            style="max-height: 100%"
+                            tabindex="0"
+                            role="application"
+                            aria-label="Vídeo principal"
+                        ></video>
+                    </div>
+
+                    <div
+                        class="video-controls"
+                        role="toolbar"
+                        aria-label="Controles de vídeo"
+                    >
+                        <div class="flex items-center gap-2">
+                            <button
+                                id="overlayButton"
+                                data-hint="Adicionar Imagem"
+                                accesskey="m"
+                                aria-keyshortcuts="M"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Adicionar imagem a questão"
+                                class="btn btn-icon"
+                                title="Adicionar Imagem"
+                            >
+                                <i class="fas fa-image" aria-hidden="true"></i>
+                            </button>
+                            <button
+                                id="cutButton"
+                                data-hint="Cortar Vídeo"
+                                accesskey="x"
+                                aria-keyshortcuts="X"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Cortar vídeo selecionado"
+                                class="btn btn-icon"
+                                title="Cortar Vídeo"
+                            >
+                                <i class="fas fa-cut" aria-hidden="true"></i>
+                            </button>
+                            <button
+                                id="saveQuestionButton"
+                                data-hint="Salvar questão"
+                                accesskey="s"
+                                aria-keyshortcuts="S"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Salvar questão"
+                                class="btn btn-icon"
+                                title="Salvar questão"
+                            >
+                                <i class="fas fa-save" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button
+                                data-hint="Retroceder 10 segundos"
+                                accesskey="left"
+                                aria-keyshortcuts="ArrowLeft"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Retroceder 10 segundos"
+                                class="btn btn-icon"
+                                title="Retroceder 10 segundos"
+                            >
+                                <i
+                                    class="fas fa-backward"
+                                    aria-hidden="true"
+                                ></i>
+                            </button>
+                            <button
+                                id="play-pause"
+                                accesskey=" "
+                                aria-keyshortcuts="Space"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Reproduzir/Pausar"
+                                aria-pressed="false"
+                                class="btn btn-icon"
+                                title="Reproduzir/Pausar"
+                            >
+                                <i
+                                    class="fas fa-play"
+                                    id="play-pause-icon"
+                                    aria-hidden="true"
+                                ></i>
+                            </button>
+                            <button
+                                data-hint="Avançar 10 segundos"
+                                accesskey="right"
+                                aria-keyshortcuts="ArrowRight"
+                                tabindex="0"
+                                role="button"
+                                aria-label="Avançar 10 segundos"
+                                class="btn btn-icon"
+                                title="Avançar 10 segundos"
+                            >
+                                <i
+                                    class="fas fa-forward"
+                                    aria-hidden="true"
+                                ></i>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs">Marcadores:</span>
+                            <div id="marker-alternatives-container">
+                                <!-- Marker buttons will be injected here dynamically -->
+                            </div>
+                            <div class="flex items-center gap-1" style="margin-left: 8px;">
+                                <span class="text-xs">Gabarito:</span>
+                                        <button
+                                            id="gabaritoButton"
+                                            data-hint="Definir Gabarito"
+                                            accesskey="g"
+                                            aria-keyshortcuts="G"
+                                            tabindex="0"
+                                            role="button"
+                                            aria-label="Definir gabarito da questão"
+                                            class="btn btn-icon"
+                                            title="Definir Gabarito"
+                                            style="margin-left: 4px;"
+                                        >
+                                            <i class="fas fa-edit" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Resize Handle -->
+                    <div
+                        class="timeline-handle"
+                        role="separator"
+                        aria-label="Redimensionar linha do tempo"
+                        tabindex="0"
+                        aria-orientation="horizontal"
+                    >
+                        <div class="timeline-resize-tooltip">
+                            Arraste: ↑Diminuir ↓Aumentar
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div class="timeline-wrapper">
+                        <div class="timeline"
+                            role="slider"
+                            aria-label="Linha do tempo do vídeo"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            aria-valuenow="20"
+                            tabindex="0">
+
+                            <!-- Ruler -->
+                            <div class="timeline-ruler" id="timelineRuler">
+                                <!-- Ticks serão gerados via JavaScript -->
+                            </div>
+
+                            <!-- Trilha Principal -->
+                            <div class="timeline-track" tabindex="0" role="presentation">
+                                <div class="timeline-progress"></div>
+                                <div class="playhead" id="playhead">
+                                    <!-- Área de clique expandida para facilitar a interação -->
+                                    <div class="playhead-hit-area" id="playheadHitArea"></div>
+                                    <!-- Tooltip de tempo -->
+                                    <div class="playhead-time-tooltip" id="playheadTimeTooltip"></div>
+                                </div>
+
+                                <!-- ESTRUTURA PARA SELEÇÃO DE CORTE -->
+                                <div class="timeline-selection" id="timelineSelection">
+                                    <div class="selection-area" id="selectionArea">
+                                        <div class="selection-start" id="selectionStart">
+                                            <div class="selection-handle-tooltip">Início da seleção</div>
+                                        </div>
+                                        <div class="selection-end" id="selectionEnd">
+                                            <div class="selection-handle-tooltip">Fim da seleção</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Trilha de Marcadores - populada dinamicamente via JavaScript -->
+                            <div class="timeline-additional-track markers-track" id="markersTrack">
+                            </div>
+
+                            <!-- Trilha de Overlays - populada dinamicamente via JavaScript -->
+                            <div class="timeline-additional-track overlays-track" id="overlaysTrack">
+                            </div>
+
+                            <!-- Informações de Tempo -->
+                            <div class="time-info">
+                                <span id="currentTime" class="font-mono" aria-label="Tempo atual">00:00.000</span>
+                                <span>Duração: <span id="duration" class="font-mono" aria-label="Duração total">00:00.000</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ---------- Status-bar ---------- -->
+            <footer class="statusbar">
+                <!-- Left Section: Project & File Info -->
+                <div class="statusbar-section">
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-file statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span class="statusbar-label">Projeto:</span>
+                        <span id="status-project-name" class="statusbar-value">Projeto sem Título</span>
+                    </div>
+                    <div class="statusbar-divider"></div>
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-video statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span class="statusbar-label">Vídeo:</span>
+                        <span id="status-video-name" class="statusbar-value">Nenhum</span>
+                    </div>
+                    <div class="statusbar-divider"></div>
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-question-circle statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span class="statusbar-label">Questões:</span>
+                        <span id="status-question-count" class="statusbar-value">0/0</span>
+                    </div>
+                </div>
+
+                <!-- Right Section: System & Time Info -->
+                <div class="statusbar-section">
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-memory statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span id="status-memory" class="statusbar-value">Calculando...</span>
+                    </div>
+                    <div class="statusbar-divider"></div>
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-microchip statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span id="status-cpu" class="statusbar-value">Calculando...</span>
+                    </div>
+                    <div class="statusbar-divider"></div>
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-clock statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span id="clock" class="statusbar-value">00:00:00</span>
+                    </div>
+                    <div class="statusbar-divider"></div>
+                    <div class="statusbar-item">
+                        <i
+                            class="fas fa-check-circle statusbar-icon"
+                            aria-hidden="true"
+                        ></i>
+                        <span id="status-ready" class="statusbar-label">Pronto</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Resize Elements -->
+        <div class="resize-overlay"></div>
+        <div class="resize-indicator"></div>
+        <div class="timeline-resize-overlay"></div>
+        <div class="timeline-resize-indicator"></div>
+        <div class="panel-details-resize-overlay"></div>
+        <div class="panel-details-resize-indicator"></div>
+
+        <!-- ---------- Gabarito Modal ---------- -->
+        <div class="modal-overlay" id="gabaritoModal">
+            <div class="modal-base-desktop gabarito-modal-desktop">
+                <div class="modal-header-desktop">
+                    <h3 class="modal-title-desktop">
+                        <i class="fas fa-check-circle"></i>
+                        Definir Gabarito
+                    </h3>
+                    <button class="btn btn-ghost btn-icon" id="closeGabaritoModal" aria-label="Fechar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body-desktop">
+                    <p class="text-sm" style="margin-bottom: 16px; color: var(--text-secondary)">
+                        Selecione a alternativa correta para esta questão:
+                    </p>
+                    <div class="gabarito-options-desktop" id="gabaritoOptions">
+                        <!-- Options will be dynamically injected here -->
+                    </div>
+                </div>
+                <div class="modal-footer-desktop">
+                    <button type="button" class="btn btn-secondary" id="cancelGabarito">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmGabarito" disabled>
+                        <i class="fas fa-check"></i>
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---------- Overlay Modal ---------- -->
+        <div class="modal-overlay" id="overlayModal">
+            <div class="modal-base-desktop overlay-modal-desktop">
+                <div class="modal-header-desktop">
+                    <h3 class="modal-title-desktop">
+                        <i class="fas fa-image"></i>
+                        Adicionar Imagem ao Vídeo
+                    </h3>
+                    <button class="btn btn-ghost btn-icon" id="closeOverlayModal" aria-label="Fechar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <main class="modal-body-desktop">
+                    <div class="column" style="flex: 1.6;">
+                        <div class="form-group">
+                            <label for="imageUpload">Imagem</label>
+                            <div class="image-upload-area">
+                                <button id="overlayImageSelectBtn" class="btn secondary">Selecione um Arquivo</button>
+                                <input type="file" id="imageUpload" accept="image/*" hidden>
+                            </div>
+                                                        <img id="imagePreview" alt="Preview da Imagem" style="display: none; max-width: 100%; max-height: 200px; object-fit: contain; border-radius: var(--radius); border: 1px solid var(--border-color); margin-top: 12px;">
+                            <button id="changeImageBtn" class="btn secondary" style="display: none; margin-top: 12px; width: 100%;">Trocar Imagem</button>
+                            <img id="previewImage" style="display:none;" alt="Preview">
+                        </div>
+                    </div>
+                    <div class="column" style="flex: 1;">
+                        <div class="form-group">
+                            <label>Tempo</label>
+                            <div class="input-group">
+                                <input type="number" class="input" id="overlayStartTime" placeholder="Início (s)">
+                                <input type="number" class="input" id="overlayDuration" placeholder="Duração (s)" value="5.0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="position">Posição</label>
+                            <div class="position-grid" id="positionGrid">
+                                <div class="position-cell" data-value="top-left"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="top-center"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="top-right"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="center-left"><div class="dot"></div></div>
+                                <div class="position-cell selected" data-value="center"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="center-right"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="bottom-left"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="bottom-center"><div class="dot"></div></div>
+                                <div class="position-cell" data-value="bottom-right"><div class="dot"></div></div>
+                            </div>
+                            <input type="hidden" id="position" value="center">
+                        </div>
+                        <div class="form-group">
+                            <label for="size">Tamanho e Opacidade</label>
+                            <div class="slider-group">
+                                <input type="range" id="size" min="10" max="80" value="80">
+                                <span id="sizeValue" style="margin-left: 10px; color: var(--text-secondary);">80%</span>
+                            </div>
+                            <div class="slider-group" style="margin-top: 8px;">
+                                <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="1">
+                                <span id="opacityValue" style="margin-left: 10px; color: var(--text-secondary);">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <footer class="modal-footer-desktop">
+                    <button type="button" class="btn btn-secondary" id="cancelImage">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="removeImage">
+                        <i class="fas fa-trash"></i>
+                        Remover
+                    </button>
+                    <button type="button" class="btn btn-primary" id="applyImage">
+                        <i class="fas fa-check"></i>
+                        Aplicar
+                    </button>
+                </footer>
+            </div>
+        </div>
+
+        <!-- ---------- Modal de Novo Projeto (MVP) ---------- -->
+          <div class="modal-overlay" id="newProjectModal">
+            <div class="modal-base-desktop new-project-modal modal-md">
+                <div class="modal-header-desktop">
+                    <h3 class="modal-title-desktop">
+                        <i class="fas fa-plus-circle"></i>
+                        Criar Nova Avaliação
+                    </h3>
+                    <button class="btn btn-ghost btn-icon" onclick="cancelProjectCreation()" aria-label="Fechar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body-desktop">
+                    <div class="form-group">
+                        <label for="projectName">Nome da Avaliação *</label>
+                        <input
+                            type="text"
+                            id="projectName"
+                            name="projectName"
+                            class="input"
+                            placeholder="Ex: Prova de Matemática - 1º Bimestre"
+                            maxlength="100"
+                            required
+                        >
+                        <div class="input-hint">Máximo de 100 caracteres</div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="alternativesCount">Número de Alternativas</label>
+                            <select id="alternativesCount" class="input">
+                                <option value="4">4 Alternativas (A, B, C, D)</option>
+                                <option value="5" selected>5 Alternativas (A, B, C, D, E)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showGuidedMode" checked>
+                            <span class="checkmark"></span>
+                            Exibir modo guiado para primeiros usuários
+                        </label>
+                    </div>
+
+                    <!-- Espaçamento otimizado para melhor posicionamento dos botões -->
+                    <div style="height: 12px;"></div>
+                </div>
+
+                <div class="modal-footer-desktop">
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-secondary" id="cancelProjectCreation">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" id="confirmProjectCreation" disabled>
+                            <i class="fas fa-check"></i>
+                            Criar Avaliação
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 2. Script OverlayManager legado (compatibilidade) -->
+        <script src="sources/js/OverlayManager.js"></script>
+
+        <!-- 4. Script principal -->
+        <script src="sources/js/base.js"></script>
+
+        <!-- ---------- Fase 4: Validação Básica Simplificada ---------- -->
+        <!-- Validações básicas implementadas diretamente no script.js -->
+    </body>
+</html>
